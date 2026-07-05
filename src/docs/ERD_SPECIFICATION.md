@@ -486,6 +486,8 @@ The model remains centered on the User as the root owner of personal records, wh
 - The logical model remains compatible with Supabase-based application architectures and future service-layer integration.
 - The logical model is compatible with PostgreSQL Row Level Security for future user-level data isolation.
 - The design remains migration-ready and suitable for future schema refinement, PostgreSQL implementation, Supabase deployment, and API development.
+- PostgreSQL database functions may be used to centralize reusable health calculations and reporting logic.
+- Functions such as calculate_bmi(), calculate_bmr(), generate_weekly_report(), and create_notification() provide implementation-level automation while preserving the logical entity relationships defined in this specification.
 
 ---
 

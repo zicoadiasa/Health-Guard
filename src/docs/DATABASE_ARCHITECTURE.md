@@ -257,3 +257,18 @@ The database should not store:
 - non-health private conversations unrelated to the app’s purpose
 
 These boundaries ensure that the database remains a durable, maintainable system of record rather than a repository for transient operational artifacts.
+
+## 13. Database Functions
+
+### Database Functions
+
+HealthGuard uses PostgreSQL functions to centralize reusable business calculations and automation that should remain consistent regardless of the application client.
+
+The initial implementation includes:
+
+- calculate_bmi()
+- calculate_bmr()
+- generate_weekly_report()
+- create_notification()
+
+These functions improve consistency, reduce duplicated application logic, and support future service-layer integration.
