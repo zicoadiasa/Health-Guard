@@ -1,16 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { deleteGoal } from "@/actions/goals/delete";
 import GoalForm from "@/components/goals/GoalForm";
+import GoalsList from "@/components/goals/GoalsList";
 import Card from "@/components/ui/Card";
 import PageHeading from "@/components/ui/PageHeading";
-import EmptyState from "@/components/ui/EmptyState";
-import Badge from "@/components/ui/Badge";
-
-const statusVariant = {
-  active: "success",
-  completed: "neutral",
-  cancelled: "danger",
-} as const;
+import IconChip from "@/components/ui/IconChip";
 
 export default async function GoalsPage() {
   const supabase = await createClient();
@@ -19,69 +12,55 @@ export default async function GoalsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: entries } = user
-    ? await supabase
-        .from("goals")
-        .select(
-          "id, goal_type, target_value, current_value, unit, status"
-        )
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-    : { data: [] };
+  if (!user) return null;
+
+  const { data: entries } = await supabase
+    .from("goals")
+    .select("id, goal_type, target_value, current_value, unit, status")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const allGoals = entries ?? [];
+  const activeGoals = allGoals.filter((goal) => goal.status === "active");
+  const otherGoals = allGoals.filter((goal) => goal.status !== "active");
+
+  const progressList = activeGoals.map((goal) =>
+    goal.target_value ? ((goal.current_value ?? 0) / goal.target_value) * 100 : 0
+  );
+  const avgProgress =
+    progressList.length > 0
+      ? Math.round(progressList.reduce((sum, p) => sum + p, 0) / progressList.length)
+      : 0;
+
+  const insightSentence =
+    activeGoals.length === 0
+      ? "Belum ada goal aktif. Yuk mulai dengan satu target sederhana."
+      : `Kamu punya ${activeGoals.length} goal aktif dengan rata-rata progres ${avgProgress}%.`;
 
   return (
     <div className="space-y-6">
       <PageHeading>Goals</PageHeading>
 
-      <GoalForm />
-
-      <Card className="overflow-x-auto" title="Daftar Goals">
-        {!entries || entries.length === 0 ? (
-          <EmptyState message="Belum ada goal." />
-        ) : (
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2 pr-4">Jenis</th>
-                <th className="py-2 pr-4">Progres</th>
-                <th className="py-2 pr-4">Target</th>
-                <th className="py-2 pr-4">Status</th>
-                <th className="py-2 pr-4" />
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry) => (
-                <tr key={entry.id} className="border-b border-gray-100">
-                  <td className="py-2 pr-4 capitalize">
-                    {entry.goal_type.replaceAll("_", " ")}
-                  </td>
-                  <td className="py-2 pr-4">
-                    {entry.current_value ?? "-"} {entry.unit}
-                  </td>
-                  <td className="py-2 pr-4">
-                    {entry.target_value ?? "-"} {entry.unit}
-                  </td>
-                  <td className="py-2 pr-4">
-                    <Badge variant={statusVariant[entry.status as keyof typeof statusVariant]}>
-                      {entry.status}
-                    </Badge>
-                  </td>
-                  <td className="py-2 pr-4">
-                    <form action={deleteGoal.bind(null, entry.id)}>
-                      <button
-                        type="submit"
-                        className="text-red-600 hover:underline"
-                      >
-                        Hapus
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <Card>
+        <div className="flex items-center gap-4">
+          <IconChip name="target" bg="bg-purple-50" color="text-purple-600" />
+          <p className="text-sm text-gray-700">{insightSentence}</p>
+        </div>
       </Card>
+
+      <div>
+        <h2 className="mb-3 text-lg font-semibold text-gray-900">Goal Aktif</h2>
+        <GoalsList entries={activeGoals} />
+      </div>
+
+      {otherGoals.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">Riwayat Goal</h2>
+          <GoalsList entries={otherGoals} />
+        </div>
+      )}
+
+      <GoalForm />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import {
   createActivityLog,
   type CreateActivityLogState,
@@ -11,6 +11,7 @@ import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import Icon from "@/components/ui/Icon";
 
 const initialState: CreateActivityLogState = { error: null };
 
@@ -19,6 +20,7 @@ export default function ActivityLogForm() {
     createActivityLog,
     initialState
   );
+  const [isOpen, setIsOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -27,8 +29,22 @@ export default function ActivityLogForm() {
     }
   }, [isPending, state.error]);
 
+  if (!isOpen) {
+    return (
+      <Button
+        type="button"
+        variant="secondary"
+        className="w-full gap-2 sm:w-auto"
+        onClick={() => setIsOpen(true)}
+      >
+        <Icon name="plus" className="h-4 w-4" />
+        Tambah Aktivitas
+      </Button>
+    );
+  }
+
   return (
-    <Card className="max-w-xl" title="Tambah Activity Log">
+    <Card className="max-w-xl" title="Tambah Aktivitas">
       {state.error && (
         <Alert variant="error" className="mb-4">
           {state.error}
@@ -47,13 +63,13 @@ export default function ActivityLogForm() {
           required
           defaultValue="walking"
         >
-          <option value="walking">Walking</option>
-          <option value="running">Running</option>
-          <option value="cycling">Cycling</option>
-          <option value="swimming">Swimming</option>
-          <option value="workout">Workout</option>
+          <option value="walking">Jalan Kaki</option>
+          <option value="running">Lari</option>
+          <option value="cycling">Bersepeda</option>
+          <option value="swimming">Berenang</option>
+          <option value="workout">Latihan</option>
           <option value="yoga">Yoga</option>
-          <option value="other">Other</option>
+          <option value="other">Lainnya</option>
         </Select>
         <Input
           label="Tanggal"
@@ -79,9 +95,12 @@ export default function ActivityLogForm() {
         <div className="sm:col-span-2">
           <Textarea label="Catatan" id="notes" name="notes" rows={2} />
         </div>
-        <div className="sm:col-span-2">
-          <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
+        <div className="flex gap-3 sm:col-span-2">
+          <Button type="submit" disabled={isPending} className="flex-1 sm:flex-none">
             {isPending ? "Menyimpan..." : "Tambah"}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setIsOpen(false)}>
+            Tutup
           </Button>
         </div>
       </form>

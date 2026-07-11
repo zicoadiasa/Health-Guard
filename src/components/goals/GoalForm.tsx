@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import { createGoal, type CreateGoalState } from "@/actions/goals/create";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -8,6 +8,7 @@ import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import Icon from "@/components/ui/Icon";
 
 const initialState: CreateGoalState = { error: null };
 
@@ -16,6 +17,7 @@ export default function GoalForm() {
     createGoal,
     initialState
   );
+  const [isOpen, setIsOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -24,8 +26,22 @@ export default function GoalForm() {
     }
   }, [isPending, state.error]);
 
+  if (!isOpen) {
+    return (
+      <Button
+        type="button"
+        variant="secondary"
+        className="w-full gap-2 sm:w-auto"
+        onClick={() => setIsOpen(true)}
+      >
+        <Icon name="plus" className="h-4 w-4" />
+        Buat Goal Baru
+      </Button>
+    );
+  }
+
   return (
-    <Card className="max-w-2xl" title="Tambah Goal">
+    <Card className="max-w-2xl" title="Goal Baru">
       {state.error && (
         <Alert variant="error" className="mb-4">
           {state.error}
@@ -44,12 +60,12 @@ export default function GoalForm() {
           required
           defaultValue="lose_weight"
         >
-          <option value="lose_weight">Lose Weight</option>
-          <option value="gain_weight">Gain Weight</option>
-          <option value="maintain_weight">Maintain Weight</option>
-          <option value="reduce_blood_sugar">Reduce Blood Sugar</option>
-          <option value="increase_activity">Increase Activity</option>
-          <option value="healthy_eating">Healthy Eating</option>
+          <option value="lose_weight">Menurunkan Berat Badan</option>
+          <option value="gain_weight">Menambah Berat Badan</option>
+          <option value="maintain_weight">Menjaga Berat Badan</option>
+          <option value="reduce_blood_sugar">Menurunkan Gula Darah</option>
+          <option value="increase_activity">Meningkatkan Aktivitas</option>
+          <option value="healthy_eating">Pola Makan Sehat</option>
         </Select>
         <Select
           label="Status"
@@ -58,9 +74,9 @@ export default function GoalForm() {
           required
           defaultValue="active"
         >
-          <option value="active">Active</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="active">Aktif</option>
+          <option value="completed">Selesai</option>
+          <option value="cancelled">Dibatalkan</option>
         </Select>
         <Input
           label="Target"
@@ -82,9 +98,12 @@ export default function GoalForm() {
         <div className="sm:col-span-2">
           <Textarea label="Catatan" id="notes" name="notes" rows={2} />
         </div>
-        <div className="sm:col-span-2">
-          <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
-            {isPending ? "Menyimpan..." : "Tambah"}
+        <div className="flex gap-3 sm:col-span-2">
+          <Button type="submit" disabled={isPending} className="flex-1 sm:flex-none">
+            {isPending ? "Menyimpan..." : "Buat"}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setIsOpen(false)}>
+            Tutup
           </Button>
         </div>
       </form>

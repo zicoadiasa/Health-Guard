@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import {
   createReminder,
   type CreateReminderState,
@@ -11,6 +11,7 @@ import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import Icon from "@/components/ui/Icon";
 
 const initialState: CreateReminderState = { error: null };
 
@@ -19,6 +20,7 @@ export default function ReminderForm() {
     createReminder,
     initialState
   );
+  const [isOpen, setIsOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -27,8 +29,22 @@ export default function ReminderForm() {
     }
   }, [isPending, state.error]);
 
+  if (!isOpen) {
+    return (
+      <Button
+        type="button"
+        variant="secondary"
+        className="w-full gap-2 sm:w-auto"
+        onClick={() => setIsOpen(true)}
+      >
+        <Icon name="plus" className="h-4 w-4" />
+        Tambah Reminder
+      </Button>
+    );
+  }
+
   return (
-    <Card className="max-w-xl" title="Tambah Reminder">
+    <Card className="max-w-xl" title="Reminder Baru">
       {state.error && (
         <Alert variant="error" className="mb-4">
           {state.error}
@@ -50,12 +66,12 @@ export default function ReminderForm() {
           required
           defaultValue="custom"
         >
-          <option value="meal">Meal</option>
-          <option value="exercise">Exercise</option>
-          <option value="blood_sugar">Blood Sugar</option>
-          <option value="medication">Medication</option>
-          <option value="weight">Weight</option>
-          <option value="custom">Custom</option>
+          <option value="meal">Makan</option>
+          <option value="exercise">Olahraga</option>
+          <option value="blood_sugar">Cek Gula Darah</option>
+          <option value="medication">Minum Obat</option>
+          <option value="weight">Cek Berat Badan</option>
+          <option value="custom">Lainnya</option>
         </Select>
         <Input
           label="Waktu"
@@ -67,9 +83,12 @@ export default function ReminderForm() {
         <div className="sm:col-span-2">
           <Textarea label="Deskripsi" id="description" name="description" rows={2} />
         </div>
-        <div className="sm:col-span-2">
-          <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
+        <div className="flex gap-3 sm:col-span-2">
+          <Button type="submit" disabled={isPending} className="flex-1 sm:flex-none">
             {isPending ? "Menyimpan..." : "Tambah"}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setIsOpen(false)}>
+            Tutup
           </Button>
         </div>
       </form>

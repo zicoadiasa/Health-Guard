@@ -29,7 +29,7 @@ export default function SettingsForm({
   );
 
   return (
-    <Card className="max-w-md" title="Akun">
+    <Card className="max-w-md" title="Edit Profil">
       {state.success && (
         <Alert variant="success" className="mb-4">
           Perubahan disimpan.

@@ -1,11 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import { deleteReminder } from "@/actions/reminder/delete";
-import { toggleReminderStatus } from "@/actions/reminder/toggle-status";
 import ReminderForm from "@/components/reminder/ReminderForm";
+import ReminderList from "@/components/reminder/ReminderList";
 import Card from "@/components/ui/Card";
 import PageHeading from "@/components/ui/PageHeading";
-import EmptyState from "@/components/ui/EmptyState";
-import Badge from "@/components/ui/Badge";
+import IconChip from "@/components/ui/IconChip";
+import { translateReminderType } from "@/lib/labels";
 
 export default async function ReminderPage() {
   const supabase = await createClient();
@@ -14,79 +13,47 @@ export default async function ReminderPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: entries } = user
-    ? await supabase
-        .from("reminders")
-        .select("id, title, reminder_type, reminder_time, status")
-        .eq("user_id", user.id)
-        .order("reminder_time", { ascending: true })
-    : { data: [] };
+  if (!user) return null;
+
+  const { data: entries } = await supabase
+    .from("reminders")
+    .select("id, title, reminder_type, reminder_time, status")
+    .eq("user_id", user.id)
+    .order("reminder_time", { ascending: true });
+
+  const allReminders = entries ?? [];
+  const activeReminders = allReminders.filter((entry) => entry.status === "active");
+
+  const now = new Date();
+  const nextReminder = activeReminders
+    .filter((entry) => new Date(entry.reminder_time) >= now)
+    .sort((a, b) => new Date(a.reminder_time).getTime() - new Date(b.reminder_time).getTime())[0];
+
+  const insightSentence = nextReminder
+    ? `Reminder berikutnya: ${nextReminder.title} (${translateReminderType(nextReminder.reminder_type)}) pada ${new Date(
+        nextReminder.reminder_time
+      ).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}.`
+    : activeReminders.length > 0
+      ? `Kamu punya ${activeReminders.length} reminder aktif.`
+      : "Belum ada reminder aktif. Yuk atur pengingat pertamamu.";
 
   return (
     <div className="space-y-6">
       <PageHeading>Reminder</PageHeading>
 
-      <ReminderForm />
-
-      <Card className="overflow-x-auto" title="Daftar Reminder">
-        {!entries || entries.length === 0 ? (
-          <EmptyState message="Belum ada reminder." />
-        ) : (
-          <table className="w-full min-w-[560px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2 pr-4">Judul</th>
-                <th className="py-2 pr-4">Jenis</th>
-                <th className="py-2 pr-4">Waktu</th>
-                <th className="py-2 pr-4">Status</th>
-                <th className="py-2 pr-4" />
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry) => (
-                <tr key={entry.id} className="border-b border-gray-100">
-                  <td className="py-2 pr-4">{entry.title}</td>
-                  <td className="py-2 pr-4 capitalize">
-                    {entry.reminder_type.replaceAll("_", " ")}
-                  </td>
-                  <td className="py-2 pr-4">
-                    {new Date(entry.reminder_time).toLocaleString("id-ID")}
-                  </td>
-                  <td className="py-2 pr-4">
-                    <form
-                      action={toggleReminderStatus.bind(
-                        null,
-                        entry.id,
-                        entry.status
-                      )}
-                    >
-                      <button type="submit">
-                        <Badge
-                          variant={
-                            entry.status === "active" ? "success" : "neutral"
-                          }
-                        >
-                          {entry.status}
-                        </Badge>
-                      </button>
-                    </form>
-                  </td>
-                  <td className="py-2 pr-4">
-                    <form action={deleteReminder.bind(null, entry.id)}>
-                      <button
-                        type="submit"
-                        className="text-red-600 hover:underline"
-                      >
-                        Hapus
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <Card>
+        <div className="flex items-center gap-4">
+          <IconChip name="bell" bg="bg-purple-50" color="text-purple-600" />
+          <p className="text-sm text-gray-700">{insightSentence}</p>
+        </div>
       </Card>
+
+      <div>
+        <h2 className="mb-3 text-lg font-semibold text-gray-900">Daftar Reminder</h2>
+        <ReminderList entries={allReminders} />
+      </div>
+
+      <ReminderForm />
     </div>
   );
 }

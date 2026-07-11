@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import {
   createMealPlan,
   type CreateMealPlanState,
@@ -10,6 +10,7 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import Icon from "@/components/ui/Icon";
 
 const initialState: CreateMealPlanState = { error: null };
 
@@ -18,6 +19,7 @@ export default function MealPlanForm() {
     createMealPlan,
     initialState
   );
+  const [isOpen, setIsOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -26,8 +28,22 @@ export default function MealPlanForm() {
     }
   }, [isPending, state.error]);
 
+  if (!isOpen) {
+    return (
+      <Button
+        type="button"
+        variant="secondary"
+        className="w-full gap-2 sm:w-auto"
+        onClick={() => setIsOpen(true)}
+      >
+        <Icon name="plus" className="h-4 w-4" />
+        Buat Rencana Makan
+      </Button>
+    );
+  }
+
   return (
-    <Card className="max-w-xl" title="Tambah Meal Plan">
+    <Card className="max-w-xl" title="Rencana Makan Baru">
       {state.error && (
         <Alert variant="error" className="mb-4">
           {state.error}
@@ -50,7 +66,7 @@ export default function MealPlanForm() {
           required
         />
         <Input
-          label="Total Kalori"
+          label="Target Kalori"
           id="total_calories"
           name="total_calories"
           type="number"
@@ -63,13 +79,16 @@ export default function MealPlanForm() {
           required
           defaultValue="active"
         >
-          <option value="active">Active</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="active">Aktif</option>
+          <option value="completed">Selesai</option>
+          <option value="cancelled">Dibatalkan</option>
         </Select>
-        <div className="sm:col-span-2">
-          <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
-            {isPending ? "Menyimpan..." : "Tambah"}
+        <div className="flex gap-3 sm:col-span-2">
+          <Button type="submit" disabled={isPending} className="flex-1 sm:flex-none">
+            {isPending ? "Menyimpan..." : "Buat"}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setIsOpen(false)}>
+            Tutup
           </Button>
         </div>
       </form>
