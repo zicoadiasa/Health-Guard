@@ -1,5 +1,11 @@
 import LoginForm from "@/components/auth/LoginForm";
 
-export default function LoginPage() {
-  return <LoginForm />;
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ registered?: string }>;
+}) {
+  const { registered } = await searchParams;
+
+  return <LoginForm registered={registered === "true"} />;
 }
