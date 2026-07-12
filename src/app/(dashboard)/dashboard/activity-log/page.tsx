@@ -5,7 +5,7 @@ import Card from "@/components/ui/Card";
 import PageHeading from "@/components/ui/PageHeading";
 import IconChip from "@/components/ui/IconChip";
 import ProgressBar from "@/components/ui/ProgressBar";
-import { todayRange } from "@/lib/date";
+import { todayRange, weekAgoDateStr } from "@/lib/date";
 
 const DEFAULT_DAILY_TARGET_MINUTES = 30;
 
@@ -19,9 +19,7 @@ export default async function ActivityLogPage() {
   if (!user) return null;
 
   const { dateStr } = todayRange();
-  const weekAgoStr = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  const weekAgoStr = weekAgoDateStr();
 
   const [{ data: entries }, { data: activityGoal }] = await Promise.all([
     supabase

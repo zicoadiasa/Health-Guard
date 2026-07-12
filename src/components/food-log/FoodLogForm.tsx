@@ -12,6 +12,11 @@ import Textarea from "@/components/ui/Textarea";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import Icon from "@/components/ui/Icon";
+import FoodReferenceSearch, {
+  type FoodReferenceSearchHandle,
+} from "@/components/nutrition/FoodReferenceSearch";
+import FoodReferenceInfo from "@/components/nutrition/FoodReferenceInfo";
+import type { FoodReferenceItem } from "@/lib/nutrition/food-reference";
 
 const initialState: CreateFoodLogState = { error: null };
 
@@ -27,13 +32,38 @@ export default function FoodLogForm() {
     initialState
   );
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedRef, setSelectedRef] = useState<FoodReferenceItem | null>(null);
+  const [ackState, setAckState] = useState(state);
   const formRef = useRef<HTMLFormElement>(null);
+  const searchRef = useRef<FoodReferenceSearchHandle>(null);
+  const caloriesRef = useRef<HTMLInputElement>(null);
+  const proteinRef = useRef<HTMLInputElement>(null);
+  const carbsRef = useRef<HTMLInputElement>(null);
+  const fatRef = useRef<HTMLInputElement>(null);
+  const sugarRef = useRef<HTMLInputElement>(null);
+
+  if (state !== ackState) {
+    setAckState(state);
+    if (!state.error) {
+      setSelectedRef(null);
+    }
+  }
 
   useEffect(() => {
     if (!isPending && !state.error) {
       formRef.current?.reset();
+      searchRef.current?.reset();
     }
   }, [isPending, state.error]);
+
+  function handleSelectReference(item: FoodReferenceItem) {
+    if (caloriesRef.current) caloriesRef.current.value = String(item.calories);
+    if (proteinRef.current) proteinRef.current.value = String(item.protein);
+    if (carbsRef.current) carbsRef.current.value = String(item.carbohydrates);
+    if (fatRef.current) fatRef.current.value = String(item.fat);
+    if (sugarRef.current) sugarRef.current.value = String(item.sugar);
+    setSelectedRef(item);
+  }
 
   if (!isOpen) {
     return (
@@ -62,7 +92,12 @@ export default function FoodLogForm() {
         action={formAction}
         className="grid grid-cols-1 gap-4 sm:grid-cols-2"
       >
-        <Input label="Nama Makanan" id="food_name" name="food_name" required />
+        <FoodReferenceSearch
+          ref={searchRef}
+          id="food_name"
+          name="food_name"
+          onSelect={handleSelectReference}
+        />
         <Select
           label="Jenis Makan"
           id="meal_type"
@@ -83,8 +118,16 @@ export default function FoodLogForm() {
           step="0.1"
           min="0"
         />
-        <Input label="Kalori" id="calories" name="calories" type="number" min="0" />
         <Input
+          ref={caloriesRef}
+          label="Kalori"
+          id="calories"
+          name="calories"
+          type="number"
+          min="0"
+        />
+        <Input
+          ref={proteinRef}
           label="Protein (g)"
           id="protein"
           name="protein"
@@ -93,6 +136,7 @@ export default function FoodLogForm() {
           min="0"
         />
         <Input
+          ref={carbsRef}
           label="Karbohidrat (g)"
           id="carbohydrates"
           name="carbohydrates"
@@ -100,7 +144,15 @@ export default function FoodLogForm() {
           step="0.1"
           min="0"
         />
-        <Input label="Lemak (g)" id="fat" name="fat" type="number" step="0.1" min="0" />
+        <Input
+          ref={fatRef}
+          label="Lemak (g)"
+          id="fat"
+          name="fat"
+          type="number"
+          step="0.1"
+          min="0"
+        />
         <Input
           label="Serat (g)"
           id="fiber"
@@ -110,6 +162,7 @@ export default function FoodLogForm() {
           min="0"
         />
         <Input
+          ref={sugarRef}
           label="Gula (g)"
           id="sugar"
           name="sugar"
@@ -128,6 +181,7 @@ export default function FoodLogForm() {
         <div className="sm:col-span-2">
           <Textarea label="Catatan" id="notes" name="notes" rows={2} />
         </div>
+        {selectedRef && <FoodReferenceInfo item={selectedRef} />}
         <div className="flex gap-3 sm:col-span-2">
           <Button type="submit" disabled={isPending} className="flex-1 sm:flex-none">
             {isPending ? "Menyimpan..." : "Tambah"}

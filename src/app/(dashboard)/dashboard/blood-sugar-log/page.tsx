@@ -7,6 +7,7 @@ import Badge from "@/components/ui/Badge";
 import IconChip from "@/components/ui/IconChip";
 import TrendChart from "@/components/ui/TrendChart";
 import { getBloodSugarStatus } from "@/lib/health-metrics";
+import { weekAgoISO } from "@/lib/date";
 
 export default async function BloodSugarLogPage() {
   const supabase = await createClient();
@@ -36,8 +37,8 @@ export default async function BloodSugarLogPage() {
     value: entry.blood_sugar_level,
   }));
 
-  const weekAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const weekEntries = allEntries.filter((entry) => entry.measured_at >= weekAgoISO);
+  const weekAgo = weekAgoISO();
+  const weekEntries = allEntries.filter((entry) => entry.measured_at >= weekAgo);
   const weekLevels = weekEntries.map((entry) => entry.blood_sugar_level);
   const weekAvg =
     weekLevels.length > 0

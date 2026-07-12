@@ -11,7 +11,7 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import EmptyState from "@/components/ui/EmptyState";
 import { calculateBMI, getBMICategory, getBloodSugarStatus } from "@/lib/health-metrics";
 import { formatDisplayName } from "@/lib/format";
-import { todayRange } from "@/lib/date";
+import { todayRange, weekAgoISO, weekAheadISO, monthAgoISO } from "@/lib/date";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -31,17 +31,21 @@ export default async function DashboardPage() {
   if (!user) return null;
 
   const { startISO, endISO, dateStr } = todayRange();
-  const weekAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const weekAgo = weekAgoISO();
+  const weekAhead = weekAheadISO();
+  const monthAgo = monthAgoISO();
+  const nowISO = new Date().toISOString();
 
   const [
     { data: profile },
     { data: healthProfile },
     { data: todayFoodLogs },
     { data: todayActivityLogs },
-    { data: todayBloodSugar },
+    { data: latestBloodSugarRows },
+    { count: monthlyBloodSugarCount },
     { data: latestWeightRows },
     { data: activeGoals },
-    { data: todayReminders },
+    { data: upcomingReminders },
     { data: weekFoodLogs },
   ] = await Promise.all([
     supabase.from("users").select("full_name").eq("id", user.id).single(),
@@ -65,10 +69,13 @@ export default async function DashboardPage() {
       .from("blood_sugar_logs")
       .select("blood_sugar_level, measured_at")
       .eq("user_id", user.id)
-      .gte("measured_at", startISO)
-      .lt("measured_at", endISO)
       .order("measured_at", { ascending: false })
       .limit(1),
+    supabase
+      .from("blood_sugar_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("measured_at", monthAgo),
     supabase
       .from("weight_logs")
       .select("weight_kg, recorded_at")
@@ -84,14 +91,14 @@ export default async function DashboardPage() {
       .from("reminders")
       .select("id, title, reminder_time, status")
       .eq("user_id", user.id)
-      .gte("reminder_time", startISO)
-      .lt("reminder_time", endISO)
+      .gte("reminder_time", nowISO)
+      .lt("reminder_time", weekAhead)
       .order("reminder_time", { ascending: true }),
     supabase
       .from("food_logs")
       .select("calories")
       .eq("user_id", user.id)
-      .gte("consumed_at", weekAgoISO),
+      .gte("consumed_at", weekAgo),
   ]);
 
   const totalCaloriesToday = (todayFoodLogs ?? []).reduce(
@@ -110,8 +117,11 @@ export default async function DashboardPage() {
   const bmi = calculateBMI(healthProfile?.weight_kg ?? null, healthProfile?.height_cm ?? null);
   const bmiCategory = getBMICategory(bmi);
 
-  const latestBloodSugar = todayBloodSugar?.[0] ?? null;
-  const bloodSugarStatus = getBloodSugarStatus(latestBloodSugar?.blood_sugar_level ?? null);
+  const latestBloodSugar = latestBloodSugarRows?.[0] ?? null;
+  const hasRecentBloodSugar = latestBloodSugar ? latestBloodSugar.measured_at >= weekAgo : false;
+  const bloodSugarStatus = getBloodSugarStatus(
+    hasRecentBloodSugar ? (latestBloodSugar?.blood_sugar_level ?? null) : null
+  );
 
   const latestWeight = latestWeightRows?.[0] ?? null;
 
@@ -148,18 +158,21 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-4">
             <IconChip name="droplet" bg="bg-red-100" color="text-red-600" />
             <div>
-              <p className="text-sm font-medium text-gray-600">Gula Darah Hari Ini</p>
-              {latestBloodSugar ? (
+              <p className="text-sm font-medium text-gray-600">Gula Darah</p>
+              {hasRecentBloodSugar && latestBloodSugar ? (
                 <p className="text-4xl font-bold text-gray-900">
                   {latestBloodSugar.blood_sugar_level}
                   <span className="ml-1 text-base font-medium text-gray-500">mg/dL</span>
                 </p>
               ) : (
-                <p className="text-lg font-medium text-gray-500">Belum ada catatan</p>
+                <p className="text-lg font-medium text-gray-500">Belum ada catatan minggu ini</p>
               )}
+              <p className="text-xs text-gray-500">
+                {monthlyBloodSugarCount ?? 0}x dicatat bulan ini
+              </p>
             </div>
           </div>
-          {latestBloodSugar ? (
+          {hasRecentBloodSugar ? (
             <Badge variant={bloodSugarStatus.variant} className="px-3 py-1 text-sm">
               {bloodSugarStatus.label}
             </Badge>
@@ -279,32 +292,34 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* Reminder Hari Ini */}
+      {/* Reminder Minggu Ini */}
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Reminder Hari Ini</h2>
-        {todayReminders && todayReminders.length > 0 ? (
+        <h2 className="mb-3 text-lg font-semibold text-gray-900">Reminder Minggu Ini</h2>
+        {upcomingReminders && upcomingReminders.length > 0 ? (
           <div className="space-y-2">
-            {todayReminders.map((reminder) => (
+            {upcomingReminders.map((reminder) => (
               <Card key={reminder.id} className="flex items-center gap-3 py-3">
                 <IconChip name="bell" bg="bg-yellow-50" color="text-yellow-600" />
                 <div className="flex-1">
                   <p className="font-medium text-gray-900">{reminder.title}</p>
                   <p className="text-sm text-gray-600">
-                    {new Date(reminder.reminder_time).toLocaleTimeString("id-ID", {
+                    {new Date(reminder.reminder_time).toLocaleString("id-ID", {
+                      day: "numeric",
+                      month: "short",
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
                   </p>
                 </div>
                 <Badge variant={reminder.status === "active" ? "success" : "neutral"}>
-                  {reminder.status}
+                  {reminder.status === "active" ? "Aktif" : "Nonaktif"}
                 </Badge>
               </Card>
             ))}
           </div>
         ) : (
           <Card>
-            <EmptyState message="Tidak ada reminder hari ini." icon="bell" />
+            <EmptyState message="Tidak ada reminder minggu ini." icon="bell" />
           </Card>
         )}
       </div>

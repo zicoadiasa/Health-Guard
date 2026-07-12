@@ -5,7 +5,7 @@ import Card from "@/components/ui/Card";
 import PageHeading from "@/components/ui/PageHeading";
 import IconChip from "@/components/ui/IconChip";
 import ProgressBar from "@/components/ui/ProgressBar";
-import { todayRange } from "@/lib/date";
+import { todayRange, weekAgoISO } from "@/lib/date";
 
 export default async function FoodLogPage() {
   const supabase = await createClient();
@@ -17,7 +17,7 @@ export default async function FoodLogPage() {
   if (!user) return null;
 
   const { startISO, endISO } = todayRange();
-  const weekAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const weekAgo = weekAgoISO();
 
   const [{ data: entries }, { data: healthProfile }] = await Promise.all([
     supabase
@@ -46,7 +46,7 @@ export default async function FoodLogPage() {
     ? Math.round((totalCaloriesToday / calorieTarget) * 100)
     : 0;
 
-  const weekEntries = allEntries.filter((entry) => entry.consumed_at >= weekAgoISO);
+  const weekEntries = allEntries.filter((entry) => entry.consumed_at >= weekAgo);
   const weeklyTotalCalories = weekEntries.reduce(
     (sum, entry) => sum + (entry.calories ?? 0),
     0

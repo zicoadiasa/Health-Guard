@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import {
   createMealItem,
   type CreateMealItemState,
@@ -8,6 +8,8 @@ import {
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import FoodReferenceSearch from "@/components/nutrition/FoodReferenceSearch";
+import type { FoodReferenceItem } from "@/lib/nutrition/food-reference";
 
 const initialState: CreateMealItemState = { error: null, success: false };
 
@@ -26,6 +28,7 @@ export default function MealItemForm({
     createMealItem,
     initialState
   );
+  const caloriesRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (state.success) {
@@ -33,6 +36,10 @@ export default function MealItemForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.success]);
+
+  function handleSelectReference(item: FoodReferenceItem) {
+    if (caloriesRef.current) caloriesRef.current.value = String(item.calories);
+  }
 
   return (
     <form
@@ -44,7 +51,11 @@ export default function MealItemForm({
       <input type="hidden" name="meal_type" value={mealType} />
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <Input label="Nama Makanan" id={`food_name_${mealType}`} name="food_name" required />
+        <FoodReferenceSearch
+          id={`food_name_${mealType}`}
+          name="food_name"
+          onSelect={handleSelectReference}
+        />
         <Input
           label="Porsi (gram)"
           id={`serving_size_${mealType}`}
@@ -54,6 +65,7 @@ export default function MealItemForm({
           min="0"
         />
         <Input
+          ref={caloriesRef}
           label="Kalori"
           id={`calories_${mealType}`}
           name="calories"
