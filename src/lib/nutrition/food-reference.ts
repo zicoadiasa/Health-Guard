@@ -50,3 +50,40 @@ export function glycemicIndexVariant(value: string): "success" | "warning" | "da
   if (value.includes("Sedang")) return "warning";
   return "success";
 }
+
+type FoodCategory = "karbohidrat" | "protein" | "lemak" | "sayur-buah";
+
+function inferFoodCategory(item: FoodReferenceItem): FoodCategory {
+  if (item.calories < 60) return "sayur-buah";
+  const { protein, carbohydrates, fat } = item;
+  // Fried/cooked protein foods (e.g. Tempe Goreng) can end up with more fat
+  // than protein by weight; require fat to clearly dominate, not just tie,
+  // so they stay grouped with other protein sources instead of oils.
+  if (fat >= carbohydrates && fat >= protein * 1.5) return "lemak";
+  if (protein >= carbohydrates) return "protein";
+  return "karbohidrat";
+}
+
+export function isRiskyForDiabetes(item: FoodReferenceItem): boolean {
+  return (
+    item.glycemicIndex.includes("Tinggi") || /Batasi|DILARANG/.test(item.diabetesSuitability)
+  );
+}
+
+export function getHealthierAlternatives(
+  item: FoodReferenceItem,
+  limit = 3
+): FoodReferenceItem[] {
+  const category = inferFoodCategory(item);
+  return foodReferenceData
+    .filter((candidate) => candidate.name !== item.name)
+    .filter((candidate) => inferFoodCategory(candidate) === category)
+    .filter((candidate) => !isRiskyForDiabetes(candidate))
+    .sort((a, b) => {
+      const scoreA = a.diabetesSuitability.includes("Sangat") ? 0 : 1;
+      const scoreB = b.diabetesSuitability.includes("Sangat") ? 0 : 1;
+      if (scoreA !== scoreB) return scoreA - scoreB;
+      return a.sugar - b.sugar;
+    })
+    .slice(0, limit);
+}

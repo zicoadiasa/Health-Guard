@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   createMealItem,
   type CreateMealItemState,
@@ -8,7 +8,10 @@ import {
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
-import FoodReferenceSearch from "@/components/nutrition/FoodReferenceSearch";
+import FoodReferenceSearch, {
+  type FoodReferenceSearchHandle,
+} from "@/components/nutrition/FoodReferenceSearch";
+import FoodReferenceInfo from "@/components/nutrition/FoodReferenceInfo";
 import type { FoodReferenceItem } from "@/lib/nutrition/food-reference";
 
 const initialState: CreateMealItemState = { error: null, success: false };
@@ -28,6 +31,8 @@ export default function MealItemForm({
     createMealItem,
     initialState
   );
+  const [selectedRef, setSelectedRef] = useState<FoodReferenceItem | null>(null);
+  const searchRef = useRef<FoodReferenceSearchHandle>(null);
   const caloriesRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -38,7 +43,9 @@ export default function MealItemForm({
   }, [state.success]);
 
   function handleSelectReference(item: FoodReferenceItem) {
+    searchRef.current?.setValue(item.name);
     if (caloriesRef.current) caloriesRef.current.value = String(item.calories);
+    setSelectedRef(item);
   }
 
   return (
@@ -52,6 +59,7 @@ export default function MealItemForm({
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <FoodReferenceSearch
+          ref={searchRef}
           id={`food_name_${mealType}`}
           name="food_name"
           onSelect={handleSelectReference}
@@ -73,6 +81,10 @@ export default function MealItemForm({
           min="0"
         />
       </div>
+
+      {selectedRef && (
+        <FoodReferenceInfo item={selectedRef} onSelectAlternative={handleSelectReference} />
+      )}
 
       <div className="flex gap-2">
         <Button type="submit" disabled={isPending} className="flex-1 sm:flex-none">

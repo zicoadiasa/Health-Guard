@@ -9,6 +9,7 @@ import {
 
 export type FoodReferenceSearchHandle = {
   reset: () => void;
+  setValue: (name: string) => void;
 };
 
 type FoodReferenceSearchProps = {
@@ -24,6 +25,7 @@ const FoodReferenceSearch = forwardRef<FoodReferenceSearchHandle, FoodReferenceS
 
     useImperativeHandle(ref, () => ({
       reset: () => setQuery(""),
+      setValue: (name: string) => setQuery(name),
     }));
 
     const results = query.trim().length >= 2 ? searchFoodReference(query) : [];

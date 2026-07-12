@@ -57,6 +57,7 @@ export default function FoodLogForm() {
   }, [isPending, state.error]);
 
   function handleSelectReference(item: FoodReferenceItem) {
+    searchRef.current?.setValue(item.name);
     if (caloriesRef.current) caloriesRef.current.value = String(item.calories);
     if (proteinRef.current) proteinRef.current.value = String(item.protein);
     if (carbsRef.current) carbsRef.current.value = String(item.carbohydrates);
@@ -181,7 +182,9 @@ export default function FoodLogForm() {
         <div className="sm:col-span-2">
           <Textarea label="Catatan" id="notes" name="notes" rows={2} />
         </div>
-        {selectedRef && <FoodReferenceInfo item={selectedRef} />}
+        {selectedRef && (
+          <FoodReferenceInfo item={selectedRef} onSelectAlternative={handleSelectReference} />
+        )}
         <div className="flex gap-3 sm:col-span-2">
           <Button type="submit" disabled={isPending} className="flex-1 sm:flex-none">
             {isPending ? "Menyimpan..." : "Tambah"}
